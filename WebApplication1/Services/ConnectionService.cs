@@ -77,7 +77,7 @@ namespace WebApplication1
         {
             NetworkStream clientStream = client.GetStream();
             Trace.WriteLine("Waiting to hear client type...");
-
+            ClientConnection newConnection;
             try
             {
                 //await _send(clientStream, TELL_CLIENT_TYPE, TELL_CLIENT_TYPE.Length);
@@ -92,16 +92,22 @@ namespace WebApplication1
 
                         CameraHub hub = _getHubDetails(receivedMessage);
                         hub.Connection = client;
-
                         cameraHubs[hub.Name] = hub;
+
+                        await Task.Factory.StartNew(() => _startReceiveCommunication(hub));
+                        await Task.Factory.StartNew(() => _startSendCommunication(hub));
                         break;
                     }
                     case ClientType.VIEW:
                     {
                         Trace.WriteLine("Adding viewing client...");
                         viewingClients.Add(client);
+                        var viewClient = new ViewClient() { Connection = client, ClientType = clientType };
+
+                        await Task.Factory.StartNew(() => _startReceiveCommunication(viewClient));
+                        await Task.Factory.StartNew(() => _startSendCommunication(viewClient));
                         break;
-                    }
+                        }
                     default:
                     {
                         Trace.WriteLine("Error switching on enum type...");
@@ -109,7 +115,7 @@ namespace WebApplication1
                         return;
                     }
                 }
-                await _send(clientStream, ACKNOWLEDGE, ACKNOWLEDGE.Length);
+                await _send(clientStream, ACKNOWLEDGE);
 
             }
             catch (Exception e)
@@ -118,8 +124,28 @@ namespace WebApplication1
 
                 client.Close();
             }
-            Task.Factory.StartNew(() => _startReceiveCommunication(client));
-            Task.Factory.StartNew(() => _startSendCommunication(client));
+        }
+
+        private async Task _startSendCommunication(ClientConnection connection)
+        {
+            connection.SendMessages = true;
+            while (connection.SendMessages)
+            {
+                while (connection.SendQueue.Count > 0)
+                {
+                    await _send(connection.Connection.GetStream(), ACKNOWLEDGE);
+                }
+            }
+        }
+
+        private async Task _startReceiveCommunication(ClientConnection connection)
+        {
+            connection.ListenForMessages = true;
+            while (connection.ListenForMessages)
+            {
+                connection.ReceivedMessage = await _receiveMessage(connection.Connection.GetStream());
+                Trace.WriteLine("Received: " + connection.ReceivedMessage.Length);
+            }
         }
 
         private CameraHub _getHubDetails(string receivedMessage)
@@ -163,34 +189,30 @@ namespace WebApplication1
         private async Task<string> _receiveMessage(NetworkStream stream)
         {
             List<byte> messageBuffer = new List<byte>();
-            byte[] tempBuffer = new byte[MESSAGE_CHUNK_SIZE];
             int messageLength = 0;
+            byte[] tempBuffer = new byte[MESSAGE_PREFIX_SIZE];
+
             try
             {
-                while (messageBuffer.Count < MESSAGE_PREFIX_SIZE)
+                var bytes = await stream.ReadAsync(tempBuffer, 0, MESSAGE_PREFIX_SIZE);
+                if (bytes == 0)
                 {
-                    var bytes = await stream.ReadAsync(tempBuffer, 0, MESSAGE_CHUNK_SIZE);
-                    if (bytes == 0)
-                    {
-                        continue;
-                    }
-                    messageBuffer.AddRange(tempBuffer.Take(bytes));
+                    throw new ArgumentException("Received 0");
                 }
 
-                messageLength = _getMessageLength(messageBuffer);
+                messageLength = _getMessageLength(tempBuffer);
 
-                messageBuffer = messageBuffer.Skip(MESSAGE_PREFIX_SIZE).ToList();
+                Trace.WriteLine(messageLength);
 
-                while (messageBuffer.Count < messageLength)
+                tempBuffer = new byte[messageLength];
+
+                bytes = stream.Read(tempBuffer, 0, messageLength);
+                if (bytes == 0)
                 {
-                    var bytes = stream.Read(tempBuffer, 0, MESSAGE_CHUNK_SIZE);
-                    if (bytes == 0)
-                    {
-                        continue;
-                    }
-                    messageBuffer.AddRange(tempBuffer.Take(bytes));
+                    throw new ArgumentException("Received 0");
                 }
-                //System.Diagnostics.Trace.WriteLine(messageLength);
+                messageBuffer.AddRange(tempBuffer.Take(bytes));
+
                 messageBuffer = messageBuffer.Take(messageLength).ToList();
             }
             catch (Exception ex)
@@ -202,8 +224,9 @@ namespace WebApplication1
             return Encoding.Default.GetString(wholeMessage.ToArray());
         }
 
-        private async Task _send(NetworkStream stream, string data, int messageSize)
+        private async Task _send(NetworkStream stream, string data)
         {
+            int messageSize = data.Length;
             byte[] contentData = Encoding.ASCII.GetBytes(data);
             byte[] messageSizeArray = BitConverter.GetBytes(messageSize);
 
@@ -229,7 +252,7 @@ namespace WebApplication1
             }
         }
 
-        private int _getMessageLength(List<byte> message)
+        private int _getMessageLength(byte[] message)
         {
             byte[] bytes = { message[3], message[2], message[1], message[0] };
 
