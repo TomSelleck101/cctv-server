@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -12,8 +13,15 @@ namespace WebApplication1.Models
         public TcpClient Connection { get; set; }
         public bool SendMessages { get; set; }
         public bool ListenForMessages { get; set; }
-        public string ReceivedMessage { get; set; }
-        public Queue<string> SendQueue { get; set; }
+        public BlockingCollection<string> ReceiveQueue { get; set; }
+        public BlockingCollection<string> SendQueue { get; set; }
         public ClientType ClientType { get; set; }
+
+        internal void Disconnect()
+        {
+            SendMessages = false;
+            ListenForMessages = false;
+            Connection.Close();
+        }
     }
 }

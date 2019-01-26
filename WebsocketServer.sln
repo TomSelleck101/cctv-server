@@ -5,7 +5,12 @@ VisualStudioVersion = 15.0.28307.168
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApplication1", "WebApplication1\WebApplication1.csproj", "{E11E8D1F-5890-4868-8B53-D1CD9E63A166}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "_scratchpad", "_scratchpad\_scratchpad.csproj", "{96C0DFD0-A179-49C8-9076-EDEA0149B121}"
+EndProject
 Global
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -15,6 +20,10 @@ Global
 		{E11E8D1F-5890-4868-8B53-D1CD9E63A166}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E11E8D1F-5890-4868-8B53-D1CD9E63A166}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E11E8D1F-5890-4868-8B53-D1CD9E63A166}.Release|Any CPU.Build.0 = Release|Any CPU
+		{96C0DFD0-A179-49C8-9076-EDEA0149B121}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{96C0DFD0-A179-49C8-9076-EDEA0149B121}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{96C0DFD0-A179-49C8-9076-EDEA0149B121}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{96C0DFD0-A179-49C8-9076-EDEA0149B121}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
