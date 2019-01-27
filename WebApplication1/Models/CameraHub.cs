@@ -11,9 +11,11 @@ namespace WebApplication1.Models
     {
         public string Name { get; set; }
         public IEnumerable<string> CameraIds { get; set; }
+        public List<ClientConnection> ViewClients { get; set; }
 
         public CameraHub()
         {
+            this.ViewClients = new List<ClientConnection>();
             this.ReceiveQueue = new BlockingCollection<string>();
             this.SendQueue = new BlockingCollection<string>();
         }

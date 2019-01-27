@@ -169,6 +169,7 @@ namespace WebApplication1
             while (connection.SendMessages)
             {
                 string message = connection.SendQueue.Take();
+                if (message == "END") break;
                 try
                 {
                     Trace.WriteLine($"Sending: {message}...");
@@ -211,6 +212,7 @@ namespace WebApplication1
                         {
                             //TODO Replace with cam id
                             hub.SendQueue.TryAdd("SEND_FOOTAGE", 0);
+                            hub.ViewClients.Add(connection);
                             connection.SendQueue.TryAdd("requesting_feed", 0);
                             continue;
                         }
@@ -218,7 +220,29 @@ namespace WebApplication1
                         {
                             //TODO Replace with cam id
                             hub.SendQueue.TryAdd("STOP_SEND_FOOTAGE", 0);
+                            hub.ViewClients.Remove(connection);
                             connection.SendQueue.TryAdd("requesting_stop", 0);
+                        }
+                        break;
+
+                    case ClientType.CAPTURE:
+                        // Assume any message from capture is an image
+                        if (((CameraHub)connection).ViewClients.Count < 1)
+                        {
+                            ((CameraHub)connection).SendQueue.TryAdd("STOP_SEND_FOOTAGE", 0);
+                            break;
+                        }
+
+                        foreach(var viewClient in ((CameraHub)connection).ViewClients)
+                        {
+                            try
+                            {
+                                await _send(viewClient.Connection.GetStream(), message);
+                            } catch (SendMessageException e)
+                            {
+                                ((CameraHub)connection).ViewClients.Remove(viewClient);
+                                viewClient.Disconnect();
+                            }
                         }
                         break;
                 }
@@ -262,7 +286,6 @@ namespace WebApplication1
         {
             List<byte> messageBuffer = new List<byte>();
             byte[] tempBuffer = new byte[MESSAGE_CHUNK_SIZE];
-            string message;
             var stream = connection.Connection.GetStream();
             connection.ListenForMessages = true;
             try
@@ -272,7 +295,7 @@ namespace WebApplication1
                 {
                     while (messageBuffer.Count < MESSAGE_PREFIX_SIZE)
                     {
-                        int bytesRead = stream.Read(tempBuffer, 0, StateObject.messageChunkSize);
+                        int bytesRead = await stream.ReadAsync(tempBuffer, 0, StateObject.messageChunkSize);
                         messageBuffer.AddRange(tempBuffer.Take(bytesRead));
                     }
 
@@ -282,7 +305,7 @@ namespace WebApplication1
 
                     while (messageBuffer.Count < messageLength)
                     {
-                        int bytesRead = stream.Read(tempBuffer, 0, StateObject.messageChunkSize);
+                        int bytesRead = await stream.ReadAsync(tempBuffer, 0, StateObject.messageChunkSize);
                         messageBuffer.AddRange(tempBuffer.Take(bytesRead));
                     }
 

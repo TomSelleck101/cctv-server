@@ -20,6 +20,7 @@ namespace WebApplication1.Models
         internal void Disconnect()
         {
             SendMessages = false;
+            SendQueue.Add("END");
             ListenForMessages = false;
             Connection.Close();
         }
