@@ -300,7 +300,7 @@ namespace WebApplication1
                     }
 
                     int messageLength = _getMessageLength(messageBuffer);
-                    Trace.WriteLine("Received: " + messageLength);
+                    //Trace.WriteLine("Received: " + messageLength);
                     messageBuffer = messageBuffer.Skip(MESSAGE_PREFIX_SIZE).ToList();
 
                     while (messageBuffer.Count < messageLength)
