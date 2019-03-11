@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using WebApplication1.Enums;
@@ -19,8 +20,7 @@ namespace WebApplication1
         private const int MESSAGE_CHUNK_SIZE = 4096;
         private const int MESSAGE_PREFIX_SIZE = 4;
         private TcpListener server = null;
-        private Int32 port = 80;
-        private IPAddress localAddr = IPAddress.Parse("127.0.0.1");
+        private IPAddress localAddr = IPAddress.Parse("192.168.0.101");
 
         private const string ACKNOWLEDGE = "1";
 
@@ -37,7 +37,7 @@ namespace WebApplication1
 
         private bool _listen = false;
 
-        public async Task StartListening()
+        public async Task StartListening(int port)
         {
             TcpListener server = null;
             _listen = true;
